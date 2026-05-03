@@ -25,6 +25,8 @@ const node_session_secret = process.env.NODE_SESSION_SECRET;
 const { database } = include('databaseConnection');
 const userCollection = database.db(mongodb_user_database).collection('users');
 
+userCollection.createIndex({ email: 1 }, { unique: true });
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -59,7 +61,7 @@ app.get('/', (req, res) => {
             <form action="/logout" method="get">
                 <button>Log out</button>
             </form>
-        `; 
+        `;
         res.send(html);
         return;
     } else {
@@ -107,7 +109,7 @@ app.post('/loginSubmit', async (req, res) => {
 
     if (email && password) {
 
-	    const schema = Joi.string().max(50).required();
+        const schema = Joi.string().max(50).required();
 
 
         const valdiationResult = schema.validate(email);
@@ -117,7 +119,7 @@ app.post('/loginSubmit', async (req, res) => {
             return;
         }
 
-        const result = await userCollection.find({email: email}).project({name:1, email: 1, password: 1, _id: 1}).toArray();
+        const result = await userCollection.find({ email: email }).project({ name: 1, email: 1, password: 1, _id: 1 }).toArray();
         console.log(result);
 
         let invalidHtml = `
@@ -198,7 +200,7 @@ app.post('/signupSubmit', async (req, res) => {
             }
         );
 
-        const valdiationResult = schema.validate({name, email, password});
+        const valdiationResult = schema.validate({ name, email, password });
         if (valdiationResult.error != null) {
             console.log(valdiationResult.error);
             res.redirect('/signup');
@@ -207,8 +209,21 @@ app.post('/signupSubmit', async (req, res) => {
 
         let hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        await userCollection.insertOne({name: name, email: email, password: hashedPassword});
-        console.log("User successfully added.");
+        try {
+            await userCollection.insertOne({ name: name, email: email, password: hashedPassword });
+            console.log("User successfully added.");
+        } catch (error) {
+            if (error.code === 11000) {
+                let html = `
+                <link rel="stylesheet" href="/css/style.css">
+                <p><b>Email</b> is already taken.</p>
+                <a href="/signup">Retry</a>
+                `;
+                res.send(html);
+                return;
+            }
+            throw error;
+        }
 
         req.session.authenticated = true;
         req.session.name = name;
