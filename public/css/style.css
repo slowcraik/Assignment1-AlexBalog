@@ -1,0 +1,17 @@
+input[type="text"], input[type="password"], input[type="email"] {
+    padding: 5px;
+    margin: 0px 0px 15px 0px;
+    border-radius: 10px;
+}
+button {
+    padding: 5px 15px;
+    width: 150px;
+}
+.submit {
+    padding: 5px 15px;
+    width: 100px;
+}
+img {
+    border: 2px solid black;
+    max-height: 500px;
+}
